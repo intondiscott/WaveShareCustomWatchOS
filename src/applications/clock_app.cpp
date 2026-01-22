@@ -13,6 +13,7 @@ static void update_clock_label(lv_timer_t *timer)
 
 static void create_clock_page(lv_event_t *e)
 {
+    
     if (!lv_obj_is_valid(SmartWatchUI_t.datetime_label))
     {
         SmartWatchUI_t.datetime_label = lv_obj_create(lv_screen_active());
@@ -28,7 +29,9 @@ static void create_clock_page(lv_event_t *e)
         lv_obj_align(SmartWatchUI_t.close_btn, LV_ALIGN_TOP_RIGHT, 0, 0);
         lv_obj_set_size(SmartWatchUI_t.datetime_label, TFT_WIDTH - 20, TFT_HEIGHT - 60);
         lv_obj_center(SmartWatchUI_t.datetime_label);
-        lv_timer_create(update_clock_label, 1000, label);
+       SmartWatchUI_t.datetime_timer = lv_timer_create(update_clock_label, 500, label);
         lv_obj_add_event_cb(SmartWatchUI_t.close_btn, close_window_cb, LV_EVENT_CLICKED, NULL);
     }
+    
+    
 }

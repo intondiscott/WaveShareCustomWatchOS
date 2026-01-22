@@ -7,6 +7,8 @@
 static float num1, num2, result = 0.0f;
 static char operator_char;
 
+
+
 static void update_calculator_label(lv_event_t *e)
 {
     lv_obj_t *label = (lv_obj_t *)lv_event_get_target(e);
@@ -69,6 +71,7 @@ static void btnm_event_handler(lv_event_t *e)
 
 static void create_calculator_page(lv_event_t *e)
 {
+
     if (!lv_obj_is_valid(SmartWatchUI_t.calculator))
     {
         SmartWatchUI_t.calculator = lv_obj_create(lv_screen_active());
@@ -78,6 +81,9 @@ static void create_calculator_page(lv_event_t *e)
         lv_group_t *keyboard_input_group = lv_group_create();
         lv_indev_t *indev = lv_indev_create();
         lv_indev_set_group(indev, keyboard_input_group);
+
+        
+
         lv_group_add_obj(keyboard_input_group, ta);
         lv_textarea_set_one_line(ta, true);
         lv_obj_align(ta, LV_ALIGN_TOP_MID, 0, 50);
@@ -119,12 +125,7 @@ static void create_calculator_page(lv_event_t *e)
         lv_obj_set_size(SmartWatchUI_t.calculator, TFT_WIDTH - 20, TFT_HEIGHT - 60);
 
         lv_obj_center(SmartWatchUI_t.calculator);
-        if (analogRead(10) > 0)
-        {
-            printf("Stylus detected\n");
-        } else{
-            printf("%d\n", analogRead(10));
-        }// Close calculator if stylus is not detected
+        lv_obj_add_event_cb(SmartWatchUI_t.close_btn, close_window_cb, LV_EVENT_PRESSED, NULL);
         lv_obj_add_event_cb(SmartWatchUI_t.close_btn, close_window_cb, LV_EVENT_CLICKED, NULL);
     }
 }

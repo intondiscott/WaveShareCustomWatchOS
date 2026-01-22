@@ -48,6 +48,8 @@ struct
         *humidity_label,
         *contact;
     char bat[6];
+
+    lv_timer_t *datetime_timer;
 } static SmartWatchUI_t;
 
 struct Weather

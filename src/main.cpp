@@ -121,6 +121,24 @@ void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
   lv_disp_flush_ready(disp);
 }
 
+static void my_button_read(lv_indev_t *indev_driver, lv_indev_data_t *data)
+{
+
+  if (analogRead(10) > 0)
+  {
+    data->state = LV_INDEV_STATE_PRESSED;
+  }
+  else
+  {
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
+
+  if (data->state == LV_INDEV_STATE_PRESSED)
+  {
+    Serial.println("Button Pressed");
+  }
+}
+
 /*Read the touchpad*/
 void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
@@ -229,7 +247,6 @@ void screen_update()
       break;
     }
   }
-  
 }
 void sensorsTask(void *pvParams)
 {
@@ -505,10 +522,17 @@ void setupLVGL(void *pvParameters)
   lv_display_set_flush_cb(disp, my_disp_flush);
 
   lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
-  lv_indev_t *indev = lv_indev_create();           /*Create an input device*/
+  lv_indev_t *indev = lv_indev_create();
+  // lv_indev_t *button_indev = lv_indev_create();          /*Create an input device*/
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER); /*Touch pad is a pointer-like device*/
+  // lv_indev_set_type(button_indev, LV_INDEV_TYPE_BUTTON); /*Create a button input device*/
   lv_indev_set_read_cb(indev, my_touchpad_read);
+  // lv_indev_set_read_cb(button_indev, my_button_read);
   lv_display_add_event_cb(disp, rounder_event_cb, LV_EVENT_INVALIDATE_AREA, NULL);
+
+  lv_indev_t *button_indev = lv_indev_create();          /*Create an input device*/
+  lv_indev_set_type(button_indev, LV_INDEV_TYPE_BUTTON); /*Create a button input device*/
+  lv_indev_set_read_cb(button_indev, my_button_read);
 
   drawUI();
   while (1)
@@ -519,7 +543,7 @@ void setupLVGL(void *pvParameters)
     lv_tick_inc(tickPeriod);
     lastTickMillis = millis();
     lv_timer_handler();
-    vTaskDelay(1);
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
