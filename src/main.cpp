@@ -552,27 +552,36 @@ void setup()
 
   USBSerial.begin(115200);
 
-  delay(1000);
+  // delay(1000);
   // Init Display
+
   if (!SmartWatchUI_t.gfx->begin())
   {
     USBSerial.println("gfx->begin() failed!");
   }
   pinMode(10, INPUT);
-  SmartWatchUI_t.gfx->fillScreen(RGB565_BLACK);
-  SmartWatchUI_t.gfx->setCursor(100, 100);
-  SmartWatchUI_t.gfx->setTextSize(3);
-  SmartWatchUI_t.gfx->setTextColor(0xCCCC, 0xFFFF);
-  SmartWatchUI_t.gfx->println("Setting up stuff...");
+  // SmartWatchUI_t.gfx->fillScreen(RGB565_BLACK);
+  // SmartWatchUI_t.gfx->setCursor(100, 100);
+  // SmartWatchUI_t.gfx->setTextSize(2);
+  // SmartWatchUI_t.gfx->setTextColor(0xCCCC, 0xFFFF);
+  // SmartWatchUI_t.gfx->println("Setting up stuff...");
   Wire.begin(IIC_SDA, IIC_SCL);
-
+  
+  // Initialize I2C communication (adjust SDA/SCL pins for your specific board)
+  bool isReady = SmartWatchUI_t.power.begin(Wire, AXP2101_SLAVE_ADDRESS, IIC_SDA, IIC_SCL);
+  if (!isReady)
+  {
+    Serial.println("AXP2101 not found!");
+    while (1)
+      ;
+  }
   while (FT3168->begin() == false)
   {
     USBSerial.println("FT3168 initialization fail");
     delay(2000);
   }
   USBSerial.println("FT3168 initialization successfully");
-  SmartWatchUI_t.power.setDLDO1Voltage(2200);
+
   FT3168->IIC_Write_Device_State(FT3168->Arduino_IIC_Touch::Device::TOUCH_POWER_MODE,
                                  FT3168->Arduino_IIC_Touch::Device_Mode::TOUCH_POWER_MONITOR);
   if (!rtc.begin(Wire, IIC_SDA, IIC_SCL))
@@ -590,8 +599,38 @@ void setup()
   uint8_t hour = 19;
   uint8_t minute = 13;
   uint8_t second = 0;
+  
+  const uint8_t co5300_init_operations[] = {
+    BEGIN_WRITE,
+    WRITE_COMMAND_8, CO5300_C_SLPOUT, // Sleep Out
+    END_WRITE,
 
-  // rtc.setDateTime(year, month, day, hour, minute, second);
+    DELAY, CO5300_SLPOUT_DELAY,
+
+    BEGIN_WRITE,
+    // WRITE_C8_D8, CO5300_WC_TEARON, 0x00,
+    WRITE_C8_D8, 0xFE, 0x00,
+    WRITE_C8_D8, CO5300_W_SPIMODECTL, 0x80,
+    // WRITE_C8_D8, CO5300_W_MADCTL, CO5300_MADCTL_COLOR_ORDER, // RGB/BGR
+    WRITE_C8_D8, CO5300_W_PIXFMT, 0x55, // Interface Pixel Format 16bit/pixel
+    // WRITE_C8_D8, CO5300_W_PIXFMT, 0x66, // Interface Pixel Format 18bit/pixel
+    // WRITE_C8_D8, CO5300_W_PIXFMT, 0x77, // Interface Pixel Format 24bit/pixel
+    WRITE_C8_D8, CO5300_W_WCTRLD1, 0x20,
+    WRITE_C8_D8, CO5300_W_WDBRIGHTNESSVALHBM, 0xFF,
+    WRITE_COMMAND_8, CO5300_C_DISPON, // Display ON
+    WRITE_C8_D8, CO5300_W_WDBRIGHTNESSVALNOR, setting_values->brightness, // Brightness adjustment
+
+    // High contrast mode (Sunlight Readability Enhancement)
+    WRITE_C8_D8, CO5300_W_WCE, 0x00, // Off
+    // WRITE_C8_D8, CO5300_W_WCE, 0x05, // On Low
+    // WRITE_C8_D8, CO5300_W_WCE, 0x06, // On Medium
+    // WRITE_C8_D8, CO5300_W_WCE, 0x07, // On High
+
+    END_WRITE,
+
+    DELAY, 10};
+  SmartWatchUI_t.bus->batchOperation(co5300_init_operations, sizeof(co5300_init_operations));
+  rtc.setDateTime(year, month, day, hour, minute, second);
   xTaskCreatePinnedToCore(setupLVGL, "setupLVGL", 1024 * 10, NULL, 3, &lvglTaskHandler, 0);
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 1024 * 6, NULL, 2, &wifiTaskHandler, 1);
   xTaskCreatePinnedToCore(sensorsTask, "sensorsTask", 1024 * 6, NULL, 1, &sensorTaskHandler, 1);

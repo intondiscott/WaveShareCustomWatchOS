@@ -299,6 +299,7 @@ public:
   virtual void invertDisplay(bool i);
   virtual void displayOn();
   virtual void displayOff();
+
   bool enableRoundMode();
 
   // BASIC DRAW API

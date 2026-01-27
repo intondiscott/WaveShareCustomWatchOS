@@ -31,39 +31,40 @@ const int resolution = 8;
 static void setBrightness(uint8_t value)
 {   
 
-    SmartWatchUI_t.power.setALDO1Voltage(2500);
+   const uint8_t co5300_init_operations[] = {
+    BEGIN_WRITE,
+    WRITE_COMMAND_8, CO5300_C_SLPOUT, // Sleep Out
+    END_WRITE,
 
-    static uint8_t level = 0;
-    static uint8_t steps = 16;
-    if (value == 0)
-    {
-        
-       
-        delay(3);
-        level = 0;
-        return;
-    }
-    if (level == 0)
-    {
-        
-        level = steps;
-        delayMicroseconds(30);
-    }
-    int from = steps - level;
-    int to = steps - value;
-    int num = (steps + to - from) % steps;
-    for (int i = 0; i < num; i++)
-    {
-        
-      
-      
-      //SmartWatchUI_t.gfx->displayOff();
-      //SmartWatchUI_t.gfx->displayOn();
+    DELAY, CO5300_SLPOUT_DELAY,
+
+    BEGIN_WRITE,
+    // WRITE_C8_D8, CO5300_WC_TEARON, 0x00,
+    WRITE_C8_D8, 0xFE, 0x00,
+    WRITE_C8_D8, CO5300_W_SPIMODECTL, 0x80,
+    // WRITE_C8_D8, CO5300_W_MADCTL, CO5300_MADCTL_COLOR_ORDER, // RGB/BGR
+    WRITE_C8_D8, CO5300_W_PIXFMT, 0x55, // Interface Pixel Format 16bit/pixel
+    // WRITE_C8_D8, CO5300_W_PIXFMT, 0x66, // Interface Pixel Format 18bit/pixel
+    // WRITE_C8_D8, CO5300_W_PIXFMT, 0x77, // Interface Pixel Format 24bit/pixel
+    WRITE_C8_D8, CO5300_W_WCTRLD1, 0x20,
+    WRITE_C8_D8, CO5300_W_WDBRIGHTNESSVALHBM, 0xFF,
+    WRITE_COMMAND_8, CO5300_C_DISPON, // Display ON
+    WRITE_C8_D8, CO5300_W_WDBRIGHTNESSVALNOR, value, // Brightness adjustment
+
+    // High contrast mode (Sunlight Readability Enhancement)
+    WRITE_C8_D8, CO5300_W_WCE, 0x00, // Off
+    // WRITE_C8_D8, CO5300_W_WCE, 0x05, // On Low
+    // WRITE_C8_D8, CO5300_W_WCE, 0x06, // On Medium
+    // WRITE_C8_D8, CO5300_W_WCE, 0x07, // On High
+
+    END_WRITE,
+
+    DELAY, 10};
+  SmartWatchUI_t.bus->batchOperation(co5300_init_operations, sizeof(co5300_init_operations));
     
         
         
-    }
-    level = value;
+    
 }
 
 static void switch_handler(lv_event_t *e)
@@ -273,7 +274,7 @@ static void create_setting_page(lv_event_t *e)
         lv_obj_set_style_pad_hor(sub_display_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(SmartWatchUI_t.setting), 0), 0);
         lv_menu_separator_create(sub_display_page);
         section = lv_menu_section_create(sub_display_page);
-        create_slider(section, LV_SYMBOL_SETTINGS, "Brightness", 3, 16, setting_values->brightness);
+        create_slider(section, LV_SYMBOL_SETTINGS, "Brightness", 10, 255, setting_values->brightness);
 
         lv_obj_t *sub_communications_page = lv_menu_page_create(SmartWatchUI_t.setting, NULL);
         lv_obj_set_style_pad_hor(sub_communications_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(SmartWatchUI_t.setting), 0), 0);

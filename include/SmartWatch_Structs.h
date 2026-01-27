@@ -62,7 +62,7 @@ struct Weather
 
 struct Settings
 {
-    uint8_t brightness = 10;
+    uint8_t brightness = 100;
     bool radio_communications = false;
     bool wifi_communications = false;
     bool bluetooth_communications = false;
