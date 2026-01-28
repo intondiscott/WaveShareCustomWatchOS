@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include "pin_config.h"
 #include <lvgl.h>
-
+#include<time.h>
 #include "Arduino_GFX_Library.h"
 #include "Arduino_DriveBus_Library.h"
 #include "../lv_conf.h"
@@ -314,6 +314,21 @@ void wifiTask(void *pvParams)
     if (WiFi.status() == WL_CONNECTED)
     {
       HTTPClient http1;
+      time_t now;
+      const char *ntpServer = "pool.ntp.org";
+      const long gmtOffset_sec = -18000;
+      const int daylightOffset_sec = 0;
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      time(&now);
+      struct tm *timeinfo = localtime(&now);
+      time_vals->hours = timeinfo->tm_hour;
+      time_vals->minutes = timeinfo->tm_min;
+      time_vals->seconds = timeinfo->tm_sec;
+      time_vals->day = timeinfo->tm_mday;
+      time_vals->month = timeinfo->tm_mon + 1;
+      time_vals->year = timeinfo->tm_year + 1900;
+      rtc.setDateTime(time_vals->year, time_vals->month, time_vals->day,
+                      time_vals->hours, time_vals->minutes, time_vals->seconds);
 
       String server_path1 = "https://api.openweathermap.org/data/2.5/weather?lat=41.3165&lon=-73.0932&appid=";
 
@@ -428,9 +443,10 @@ void drawUI()
   lv_obj_align(SmartWatchUI_t.connection_status, LV_ALIGN_LEFT_MID, 30, 0);
   lv_obj_align(SmartWatchUI_t.bluetooth_status, LV_ALIGN_LEFT_MID, 70, 0);
   lv_obj_align(SmartWatchUI_t.lora_status, LV_ALIGN_LEFT_MID, 100, 0);
-
-  lv_obj_set_size(SmartWatchUI_t.main_screen, TFT_WIDTH - 10,
-                  TFT_HEIGHT - 20);
+  lv_obj_set_style_radius(SmartWatchUI_t.main_screen, 40, LV_PART_MAIN);
+  //lv_obj_set_style_clip_corner(SmartWatchUI_t.main_screen, true, LV_PART_MAIN);
+  lv_obj_set_size(SmartWatchUI_t.main_screen, TFT_WIDTH - 0,
+                  TFT_HEIGHT - 10);
 
   lv_obj_center(SmartWatchUI_t.main_screen);
 
@@ -439,7 +455,7 @@ void drawUI()
   lv_obj_set_size(SmartWatchUI_t.nav_screen, TFT_WIDTH - 50, 30);
   lv_obj_align(SmartWatchUI_t.battery_label, LV_ALIGN_RIGHT_MID, 10, 0);
 
-  lv_obj_set_style_pad_all(SmartWatchUI_t.nav_screen, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(SmartWatchUI_t.nav_screen, 10, LV_PART_MAIN);
   lv_obj_set_style_pad_all(SmartWatchUI_t.main_screen, 0, LV_PART_MAIN);
   lv_obj_set_style_margin_all(SmartWatchUI_t.nav_screen, 10, LV_PART_MAIN);
   lv_obj_set_style_bg_color(SmartWatchUI_t.main_screen, lv_color_hex(0x98a3a2), LV_PART_MAIN);
@@ -514,7 +530,7 @@ void setupLVGL(void *pvParameters)
   // lv_image_set_src(mouse_cursor, &mouse_pointer);
   // lv_indev_set_cursor(indev, mouse_cursor);
 
-  bufSize = screenWidth * 50;
+  bufSize = screenWidth * 40;
 
   disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_8BIT);
 
@@ -595,9 +611,9 @@ void setup()
 
   uint16_t year = 2026;
   uint8_t month = 1;
-  uint8_t day = 18;
-  uint8_t hour = 19;
-  uint8_t minute = 13;
+  uint8_t day = 27;
+  uint8_t hour = 13;
+  uint8_t minute = 49;
   uint8_t second = 0;
   
   const uint8_t co5300_init_operations[] = {
@@ -630,7 +646,8 @@ void setup()
 
     DELAY, 10};
   SmartWatchUI_t.bus->batchOperation(co5300_init_operations, sizeof(co5300_init_operations));
-  rtc.setDateTime(year, month, day, hour, minute, second);
+  SmartWatchUI_t.gfx->enableRoundMode();
+  //rtc.setDateTime(year, month, day, hour, minute, second);
   xTaskCreatePinnedToCore(setupLVGL, "setupLVGL", 1024 * 10, NULL, 3, &lvglTaskHandler, 0);
   xTaskCreatePinnedToCore(wifiTask, "wifiTask", 1024 * 6, NULL, 2, &wifiTaskHandler, 1);
   xTaskCreatePinnedToCore(sensorsTask, "sensorsTask", 1024 * 6, NULL, 1, &sensorTaskHandler, 1);

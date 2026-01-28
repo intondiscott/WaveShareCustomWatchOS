@@ -70,10 +70,11 @@ struct Settings
 
 struct OSTime
 {
-    uint8_t hours = 10;
+    uint8_t hours = 12;
     uint8_t minutes = 59;
     uint8_t seconds = 9;
     uint8_t day = 18;
     uint8_t month = 1;
     uint16_t year = 2026;
+    bool military_time = true;
 };
